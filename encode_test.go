@@ -2,6 +2,7 @@ package ndjson
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -31,5 +32,22 @@ func TestEncodeLineSep(t *testing.T) {
 	expected := "{\"foo\":\"foo0\",\"x\":0}-x-{\"foo\":\"foo1\",\"x\":1}-x-"
 	if expected != buf.String() {
 		t.Errorf("unexpected encoding: %s", buf.String())
+	}
+}
+
+type errWriter struct{}
+
+func (e errWriter) Write(p []byte) (n int, err error) {
+	return 0, errors.New("ioerror")
+}
+
+func TestEncodeIOError(t *testing.T) {
+	enc := NewEncoder[record](errWriter{})
+	err := enc.EncodeAll(makeRecords((1)))
+	if err == nil {
+		t.Fatalf("expected error but got nil")
+	}
+	if err.Error() != "ioerror" {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

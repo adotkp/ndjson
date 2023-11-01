@@ -25,15 +25,21 @@ func NewDecoder[T any](r io.Reader) *Decoder[T] {
 	}
 }
 
-func (d *Decoder[T]) maybeDecode(item *T) error {
+func (d *Decoder[T]) maybeDecode(item *T) (bool, error) {
 	if !d.scanner.Scan() {
 		err := d.scanner.Err()
 		if err != nil {
-			return err
+			return false, err
 		}
-		return io.EOF
+		return false, io.EOF
 	}
-	return json.Unmarshal(d.scanner.Bytes(), item)
+	if err := json.Unmarshal(d.scanner.Bytes(), item); err != nil {
+		if d.SkipErrors {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // DecodeNext returns the next decoded value from the input stream.
@@ -41,13 +47,11 @@ func (d *Decoder[T]) maybeDecode(item *T) error {
 func (d *Decoder[T]) DecodeNext() (T, error) {
 	for {
 		var item T
-		if err := d.maybeDecode(&item); err != nil {
-			if err == io.EOF || !d.SkipErrors {
-				return item, err
-			}
-			continue
+		if ok, err := d.maybeDecode(&item); err != nil {
+			return item, err
+		} else if ok {
+			return item, nil
 		}
-		return item, nil
 	}
 }
 
