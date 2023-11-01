@@ -57,7 +57,7 @@ func (d *Decoder[T]) DecodeAll() ([]T, error) {
 			return ret, nil
 		}
 		if err != nil {
-			return ret, err
+			return nil, err
 		}
 		ret = append(ret, item)
 	}
