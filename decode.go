@@ -27,6 +27,10 @@ func NewDecoder[T any](r io.Reader) *Decoder[T] {
 
 func (d *Decoder[T]) maybeDecode(item *T) error {
 	if !d.scanner.Scan() {
+		err := d.scanner.Err()
+		if err != nil {
+			return err
+		}
 		return io.EOF
 	}
 	return json.Unmarshal(d.scanner.Bytes(), item)
